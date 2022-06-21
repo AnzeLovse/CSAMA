@@ -65,7 +65,7 @@ this function is similar to `read.csv()` but standardized the argument
 naming convention.
 
 ```{r echo=TRUE, eval=FALSE}
-fname <- file.choose()   ## BRFSS-subset.csv
+fname <- "BRFSS-subset.csv"   ## BRFSS-subset.csv
 stopifnot(file.exists(fname))
 brfss <- read_csv(fname)
 ```
@@ -154,19 +154,40 @@ _R_ using a tidy approach to data exploration.
    types, display, etc with base _R_ functions. Note that columns are
    never `factor()` by default.
    
+```{r}
+all_data <- read_tsv(file = "ALLphenoData.tsv", )
+all_data
+
+all_data <- all_data |> 
+  mutate(sex = factor(sex), mol.biol = factor(mol.biol))
+```
+   
 2. Use `filter()` to create a subset of the data consisting only of
    female individuals over 40. Compare this approach with that used in
-   base _R_. Likewise, create a subsect with only "BCR/ABL" and "NEG"
+   base _R_. Likewise, create a subset with only "BCR/ABL" and "NEG"
    in the `mol.biol` column.
+
+```{r}
+all_data |>
+  filter(sex == "F", mol.biol %in% c("BCR/ABL", "NEG"))
+```
    
+
 3. Use `mutate()` to further transform the bcrabl subset by recoding
    the `BT` column to be either B or T, based on the first letter of
    the column.
    
+```{r}
+all_data |>
+  mutate(BT = factor(substr(BT, 1, 1)))
+```
+
+   
 4. Use `group_by()` and `summarize()` to deterimine the number of
    individuals in each combination of `BT` and `mol.biol`. Can you
    perform this same computation using only `count()`?
-   
+
+
 ### Using un-tidy functions: `t.test()`
 
 We'd like to compare the average age of males and females in the study
@@ -227,6 +248,14 @@ accomplish the last task is through use of [broom][]`::tidy()`
 function to transform many base _R_ objects into tidy-friendly data
 structures.
 
+```{r}
+t_test <- function(data, formula, ...) {
+    broom::tidy(t.test(formula, data, ...))
+}
+
+pdata |>
+    t_test(age ~ sex)
+```
 
 ## Tidying the 'airway'  data
 

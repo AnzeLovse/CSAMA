@@ -134,6 +134,7 @@ methods(class=class(phiX174Phage))      # 'DNAStringSet' methods
     ```{r consensusMatrix}
     m <- consensusMatrix(phiX174Phage)[1:4,]
     polymorphic <- which(colSums(m != 0) > 1)
+    # Apply substr on a consensusMatrix and get the nucleotides at polymorphic sites.
     mapply(substr, polymorphic, polymorphic, MoreArgs=list(x=phiX174Phage))
     ```
 
@@ -256,7 +257,7 @@ Intra-range methods
 
 Inter-range methods
 - Depends on other ranges in the same object
-- `range()`, `reduce()`, `gaps()`, `disjoin()`
+- `range()`, `reduce()`, `gaps()`, `disjoin()`le
 - `coverage()` (!)
 - see `?"inter-range-methods"`
 
@@ -623,9 +624,31 @@ Example 2 (advanced): single-cell RNA-seq.
 **Exercises**
 
 - What is the frequency of 0 counts in the single cell assay data?
+```{r, message=FALSE}
+sum(assay(sce) == 0) / length(assay(sce))
+```  
+
 - What is the distribution of library sizes in the single cell assay data?
+
+```{r, message=FALSE}
+lib_sizes <- colSums(assay(sce))
+hist(lib_sizes)
+
+ggplot() + geom_density(aes(x=lib_sizes))
+```  
+
 - Create a random sample of 100 cells and visualize the relationship
   between samples using `dist()` and `cmdscale()`.
+  
+```{r}
+random_sample <- sample(sce, 100)
+d <- dist(t(assay(random_sample)))
+mds_data <- cmdscale(d)
+```
+
+```{r}
+plot(mds_data[, 1], mds_data[, 2], asp = 1)
+```
 - can you identify what column of `colData()` is responsible for any
   pattern you see?
 - In exploring the covariates, are the possible problems with confounding?
