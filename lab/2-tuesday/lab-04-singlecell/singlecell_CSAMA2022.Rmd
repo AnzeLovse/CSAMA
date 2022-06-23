@@ -506,6 +506,13 @@ Obviously, there are many other algorithms available for the clustering of singl
 
 **Exercise**: repeat the clustering with a different graph partition algorithm (e.g. `cluster_walktrap`) starting from the same graph and compare the results.
 
+```{r}
+clust <- igraph::cluster_walktrap(g)
+ggnet2(g, color=membership(clust), size=1)
+filtered$Walktrap <- factor(membership(clust))
+plotTSNE(filtered, colour_by="Walktrap")
+```
+
 ## Identification of marker genes
 
 Once we have cluster labels, we need to understand what each cluster represents. Typically, we look for marker genes to label the clusters.

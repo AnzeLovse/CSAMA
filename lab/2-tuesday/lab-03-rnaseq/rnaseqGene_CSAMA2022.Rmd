@@ -447,6 +447,14 @@ Note that these percentages do not sum to 100%, because there are more dimension
 
 ```{r plotpca, fig.width=6, fig.height=4.5}
 DESeq2::plotPCA(vsd, intgroup = "treatment")
+
+pcaData <- plotPCA(vsd, intgroup=c("treatment", "cell_line"), returnData=TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+ggplot(pcaData, aes(PC1, PC2, color=treatment, shape=cell_line)) +
+  geom_point(size=3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  coord_fixed()
 ```
 
 From the PCA plot, we see that the differences between cells (the different plotting shapes) are considerable, though not stronger than the differences due to treatment with dexamethasone (red vs blue color). 
