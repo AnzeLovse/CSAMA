@@ -1,0 +1,140 @@
+---
+title: "Metabolomics data pre-processing using xcms"
+output: html_notebook
+---
+
+
+```{r}
+library(xcms)
+library(magrittr)
+```
+
+Does the resolution / number of discrete points impact the analysis? 
+
+```{r}
+fls <- dir(system.file("sciex", package = "msdata"), full.names = TRUE)
+
+pd <- data.frame(file = basename(fls),
+                 injection_idx = c(1, 19),
+                 sample = c("POOL_1", "POOL_2"),
+                 group = "POOL")
+
+data <- readMSData(fls, pdata = new("NAnnotatedDataFrame", pd),
+                   mode = "onDisk") 
+```
+
+```{r}
+methods(class="OnDiskMSnExp")
+```
+
+```{r}
+
+head(rtime(data))
+# head(mz(data)) # Prints a large output
+```
+
+```{r}
+sps <- data %>%
+    filterRt(rt = c(180, 181)) %>%
+    spectra 
+```
+ 
+From which file was the spectrum.
+```{r}
+sapply(sps, fromFile) 
+
+```
+ 
+```{r}
+plot(sps[[6]])
+```
+
+Zoom in for the Serine peak at ~105.
+```{r}
+sps[[6]] |>
+  filterMz(mz = c(105, 107)) |>
+  plot()
+
+```
+
+
+```{r}
+# Get chromatographic data (TIC) for an m/z slice
+chr <- chromatogram(data)
+chr
+```
+
+```{r}
+plot(chr)
+```
+
+How did we end up with this range `c(106.02, 106.07))` for m/z? How wide should this interval be?
+```{r}
+data %>%
+    filterRt(rt = c(175, 189)) %>%
+    filterMz(mz = c(106.02, 106.07)) %>%
+    chromatogram(aggregationFun = "max") %>%
+    plot() 
+```
+
+
+
+```{r}
+data %>%
+    filterRt(rt = c(175, 189)) %>%
+    filterMz(mz = c(106.02, 106.07)) %>%
+    plot(type = "XIC") 
+```
+
+```{r}
+#' Smooth the signal, then do a simple peak picking.
+data_cent <- data %>%
+    smooth(method = "SavitzkyGolay", halfWindowSize = 6) %>%
+    pickPeaks()
+
+#' Plot the centroided data for Serine
+data_cent %>%
+    filterRt(rt = c(175, 189)) %>%
+    filterMz(mz = c(106.02, 106.07)) %>%
+    plot(type = "XIC") 
+```
+
+```{r}
+#' Write the centroided data to files with the same names in the current
+#' directory
+fls_new <- basename(fileNames(data))
+writeMSData(data_cent, file = fls_new)
+
+#' Read the centroided data.
+data_cent <- readMSData(fls_new, pdata = new("NAnnotatedDataFrame", pd),
+                        mode = "onDisk") 
+```
+
+```{r}
+#' Get the XIC for serine in all files
+srn_chr <- chromatogram(data_cent, rt = c(164, 200),
+                        mz = c(106.03, 106.06),
+                        aggregationFun = "max")
+#' Plot the data
+par(mfrow = c(1, 1), mar = c(4, 4.5, 1, 1))
+plot(srn_chr)
+```
+
+```{r}
+cwp <- CentWaveParam(peakwidth = c(2, 10), integrate = 2)
+
+srn_chr <- findChromPeaks(srn_chr, param = cwp)
+
+#' Plot the data and higlight identified peak area
+plot(srn_chr)
+```
+
+The boundry seems to have changed and now the peak seems cut off.
+```{r}
+cwp1 <- CentWaveParam(peakwidth = c(2, 10), integrate = 1)
+
+srn_chr1 <- findChromPeaks(srn_chr, param = cwp1)
+
+#' Plot the data and higlight identified peak area
+plot(srn_chr1)
+```

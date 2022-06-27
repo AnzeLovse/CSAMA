@@ -1,0 +1,114 @@
+---
+title: "R for Mass Spectrometry"
+output: html_notebook
+---
+
+
+```{r}
+library(rpx)
+library(Spectra)
+```
+
+```{r}
+# Load a data set.
+px <- PXDataset("PXD000001")
+px
+```
+
+```{r}
+pxfiles(px)
+```
+
+`mzML` file is the raw data file format.
+
+```{r}
+pxtax(px)
+```
+
+```{r}
+raw_data <- pxget(px, "TMT_Erwinia_1uLSike_Top10HCD_isol2_45stepped_60min_01-20141210.mzML")
+raw_data
+```
+
+```{r}
+spectra_object <- Spectra(raw_data)
+spectra_object
+```
+
+There are many methods for the Spectra objects.
+```{r}
+spectraVariables(spectra_object)
+```
+
+We can also assign new varibles in the spectra object.
+```{r}
+spectra_object$my_variable <- "SomeVar"
+```
+
+Let's find out which kinds of peakdata are available.
+```{r}
+peaksVariables(spectra_object)
+
+```
+
+
+```{r}
+spectraData(spectra_object, columns = c("msLevel"))
+
+```
+
+Exercise:
+
+
+The chromatogram can be created by extracting the totIonCurrent and rtime variables for all MS1 spectra. Annotate the spectrum of interest.
+
+```{r}
+ms1_spectra <- filterMsLevel(spectra_object, 1)
+chromatogram_data <- spectraData(ms1_spectra, columns = c("totIonCurrent","rtime")) 
+chromatogram_data
+```
+```{r}
+ggplot(data = as.data.frame(chromatogram_data), aes(x = rtime, y = totIonCurrent)) + 
+  geom_line() +
+  geom_vline(xintercept=1800.68, color = "red")
+```
+
+```{r}
+scan_oi <- filterPrecursorScan(spectra_object, 2807)
+```
+
+```{r}
+soi <- data.frame(mz = unlist(spectra_object[2807]$mz), intensity=unlist(spectra_object[2807]$intensity))
+```
+
+```{r}
+ggplot(data = soi, aes(x = mz, y = intensity)) +
+    geom_segment(aes(x = mz, xend = mz, y = 0, yend = intensity)) + geom_vline(xintercept=precursorMz(scan_oi)[-1], color="gray") +
+  geom_vline(xintercept=precursorMz(scan_oi)[2], color="red")  +
+  coord_cartesian(xlim = c(400, 1000))
+```
+
+
+```{r}
+ggplot(data = soi, aes(x = mz, y = intensity)) +
+    geom_segment(aes(x = mz, xend = mz, y = 0, yend = intensity)) + geom_vline(xintercept=precursorMz(scan_oi)[-1], color="gray") +
+  geom_vline(xintercept=precursorMz(scan_oi)[2], color="red")  +
+  coord_cartesian(xlim = c(521.1, 522.5))
+```
+
+Filter MS2 level spectra and find any 2 MS2 spectra that have matching precursor peaks based on the precursor m/z values.
+
+```{r}
+ms2_spectra <- filterMsLevel(spectra_object, 2)
+
+# All duplicated values
+which(duplicated(ms2_spectra$precursorMz))
+```
+ 
+Select the one of the duplicated spectras (in this case 37) and extract it.
+```{r}
+ms2_dup <- ms2_spectra[which(precursorMz(ms2_spectra) == precursorMz(ms2_spectra)[37])]
+
+plotSpectraMirror(x = ms2_dup[1], y = ms2_dup[2])
+```
+
